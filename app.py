@@ -163,7 +163,7 @@ if predict_button:
     elif churn_probability>0.40:
         st.warning("Medium Risk Customer")
     else:
-        st.error("Low Risk Customer")
+        st.success("Low Risk Customer")
     shap_values=explainer(input_scaled)
     if prediction[0]==1:
         st.error("Customer is likely to churn")
