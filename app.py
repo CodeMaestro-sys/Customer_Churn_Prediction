@@ -13,82 +13,84 @@ feature_names=joblib.load("models/feature_names.pkl")
 scaler=joblib.load("models/scaler.pkl")
 
 st.title("Customer_Churn_Prediction")
-st.write("Enter Customer details below: ")
+st.markdown(""" 
+            This application predicts telecom customer churn using Machine Learning and explains prediction using SHAP explainability.""")
+st.sidebar.header("Customer Details")
 
-tenure=st.number_input(
+tenure=st.sidebar.number_input(
     "Tenure (months)",
     min_value=0,
     max_value=72,
     value=12
 )
-monthly_charges=st.number_input(
+monthly_charges=st.sidebar.number_input(
     "Monthly Charges",
     min_value=0.0,
     value=50.0
 )
 
-gender=st.selectbox(
+gender=st.sidebar.selectbox(
     "Gender",
     ["Male","Female"]
 )
-partner=st.selectbox(
+partner=st.sidebar.selectbox(
     "Partner",
     ["Yes","No"]
 )
-senior_citizen=st.selectbox(
+senior_citizen=st.sidebar.selectbox(
     "Senior Citizen",
     ["Yes","No"]
 )
-dependents=st.selectbox(
+dependents=st.sidebar.selectbox(
     "Dependents",
     ["Yes","No"]
 )
-paperless_billing=st.selectbox(
+paperless_billing=st.sidebar.selectbox(
     "Paperless Billing",
     ["Yes","No"]
 )
-phone_service=st.selectbox(
+phone_service=st.sidebar.selectbox(
     "Phone Service",
     ["Yes","No"]
 )
-multiple_lines=st.selectbox(
+multiple_lines=st.sidebar.selectbox(
     "Multilple Lines",
     ["Yes","No","No phone service"]
 )
-internet_service=st.selectbox(
+internet_service=st.sidebar.selectbox(
     "Internet Service",
     ["DSL","Fiber optic","No"]
 )
 if internet_service!="No":
-    online_security=st.selectbox(
+    online_security=st.sidebar.selectbox(
         "Online Security",
         ["Yes","No","No internet service"]
         )
-    online_backup=st.selectbox(
+    online_backup=st.sidebar.selectbox(
         "Online Backup",
         ["Yes","No","No internet service"]
         )
-    device_protection=st.selectbox(
+    device_protection=st.sidebar.selectbox(
         "Device protection",
         ["Yes","No","No internet service"]
         )
-    tech_support=st.selectbox(
+    tech_support=st.sidebar.selectbox(
         "Tech Support",
         ["Yes","No","No internet service"]
         )
-    streaming_tv=st.selectbox(
+    streaming_tv=st.sidebar.selectbox(
         "Streaming TV",
         ["Yes","No","No internet service"]
         )
-    streaming_movies=st.selectbox(
+    streaming_movies=st.sidebar.selectbox(
         "Streaming Movies",
         ["Yes","No","No internet service"]
         )
-contract=st.selectbox(
+contract=st.sidebar.selectbox(
     "Contract",
     ["month-to-month","One year","Two year"]
 )
-payment_method=st.selectbox(
+payment_method=st.sidebar.selectbox(
     "Payment Method",
     ["Electronic check","Mailed check","Bank transfer (automatic)","Credit card (automatic)"]
 )
@@ -156,12 +158,18 @@ if predict_button:
     prediction=model.predict(input_scaled)
     probability=model.predict_proba(input_scaled)
     churn_probability=probability[0][1]
+    if churn_probability>0.70:
+        st.error("High Risk Customer")
+    elif churn_probability>0.40:
+        st.warning("Medium Risk Customer")
+    else:
+        st.error("Low Risk Customer")
     shap_values=explainer(input_scaled)
     if prediction[0]==1:
         st.error("Customer is likely to churn")
     else:
         st.success("Customer is unlikely to churn")
-    st.write(f"churn_probability: {churn_probability:.2%}")
+    st.metric(label="Churn Probability", value=f"{churn_probability:.2%}")
     shap_row=shap_values.values[0]
     shap_df=pd.DataFrame({
         "Feature":feature_names,
@@ -175,19 +183,17 @@ if predict_button:
         ascending=False
     )
     top5= shap_df.head(5)
+    st.bar_chart(top5.set_index('Feature')["Abs_SHAP"])
     st.subheader(
-        "Why did the model make this prediction?"
+        "Top Factors Influencing Prediction"
     )
     for _, row in top5.iterrows():
-        if row["SHAP_value"]>0:
-            direction="Increased Churn Risk"
-        else:
-            direction="Reduced Churn Risk"
-        st.write(
-            f"{row['Feature']}:"
-            f"{direction}"
-            f"({row['SHAP_value']:.3f})"
+        direction=(
+            "Increased Churn Risk"
+            if row["SHAP_value"]>0
+            else "Reduced Churn Risk"
         )
+        st.write(f"**{row['Feature']}**:{direction}")
 
 
 
